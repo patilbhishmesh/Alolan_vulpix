@@ -1,5 +1,5 @@
 module.exports = {
-  botToken: "MTQyNzI4NDQwMzY0OTkwODg5Ng.GA-B1c.fIrcST6yjuy5NdDKv7p2TCdOdlqCvgRRBVcK7",
+  botToken: "MTQyNzI4NDQwMzY0OTkwODg5Ng.GA-B1c.fIrcST6yjuy5NdDKv7p2TCdOdlqCvgRRBVcK70",
 
   prefix: "!",
 
@@ -11,7 +11,7 @@ module.exports = {
 
   webHook: "https://discord.com/api/webhooks/1437843097458446426/doJ3WWZO4mc8iDMLdQLYwdV7S5FB5MSvuIDMnpZXLnQVN3hZSFNzIog4ZfmfSHrbyTtF",
 
-  captchaApiKey: "SHUURECAPV2-51318147-4A24-4B1B-9055-6F63F6D0687",
+  captchaApiKey: "SHUURECAPV2-51318147-4A24-4B1B-9055-6F63F6D06873",
 
   captchaApiHostname: "http://217.154.201.164:9701"
 
