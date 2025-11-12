@@ -1,5 +1,6 @@
 module.exports = {
-  botToken: "MTQyNzI4NDQwMzY0OTkwODg5Ng.GA-B1c.fIrcST6yjuy5NdDKv7p2TCdOdlqCvgRRBVcK70",
+
+  botToken: process.env.TOKEN,
 
   prefix: "!",
 
