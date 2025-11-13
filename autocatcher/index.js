@@ -120,6 +120,16 @@ class AutoCatcher {
 
     this.client.on("messageCreate", async (message) => {
 
+      // helper that delays only the catch messages by 700ms
+
+      const sendDelayed = async (channel, content) => {
+
+        await wait(700);
+
+        return channel.send(content);
+
+      };
+
       if (
 
         message.author.id === poketwo ||
@@ -136,11 +146,11 @@ class AutoCatcher {
 
           let pokemons = await solveHint(message);
 
-          if (!pokemons || !pokemons.length || pokemons[0] === undefined) return;
-
           let tries = 0, index = 0;
 
           let msgs = ["c", "catch"];
+
+          let hints = [`hint`, `h`];
 
           const collector = message.channel.createMessageCollector({
 
@@ -162,21 +172,35 @@ class AutoCatcher {
 
                 await wait(4000);
 
-                index++;
+                if (++index == pokemons.length) {
 
-                if (index >= pokemons.length) {
+                  // send a hint immediately (no delay for hint)
 
-                  collector.stop();
+                  await msg.channel.send(
 
-                  return;
+                    `<@${poketwo}> ${hints[Math.round(Math.random())]}`
+
+                  );
+
+                  index = -1;
+
+                } else {
+
+                  let msgs = ["c", "catch"];
+
+                  if (!pokemons || !pokemons[index]) return;
+
+                  // send catch with 700ms delay
+
+                  await sendDelayed(
+
+                    msg.channel,
+
+                    `<@${poketwo}> ${msgs[Math.round(Math.random())]} ${pokemons[index]}`
+
+                  );
 
                 }
-
-                await msg.channel.send(
-
-                  `<@${poketwo}> ${msgs[Math.round(Math.random())]} ${pokemons[index]}`
-
-                );
 
               }
 
@@ -184,11 +208,15 @@ class AutoCatcher {
 
               let pokemons = await solveHint(msg);
 
-              if (!pokemons || !pokemons.length || pokemons[0] === undefined) return;
-
               let msgs = ["c", "catch"];
 
-              await msg.channel.send(
+              if (!pokemons || !pokemons[0]) return;
+
+              // send catch with 700ms delay
+
+              await sendDelayed(
+
+                msg.channel,
 
                 `<@${poketwo}> ${msgs[Math.round(Math.random())]} ${pokemons[0]}`
 
@@ -204,19 +232,47 @@ class AutoCatcher {
 
           });
 
-          await message.channel.send(
+          // initial catch attempt (delay applied)
+
+          if (!pokemons || !pokemons[0]) return;
+
+          tries++;
+
+          await sendDelayed(
+
+            message.channel,
 
             `<@${poketwo}> ${msgs[Math.round(Math.random())]} ${pokemons[0]}`
 
           );
-
-          tries++;
 
         }
 
         if (message.embeds.length > 0) {
 
           const embed = message.embeds[0];
+
+          if (embed.title?.includes("Quests")) {
+
+            if (embed.fields.length === 0) {
+
+              const questEmbed = new EmbedBuilder()
+
+                .setTitle("All Quests Completed")
+
+                .setDescription(`**User:** ${this.client.user.username}\n**All quests completed!**`)
+
+                .setColor("#00FF00")
+
+                .setTimestamp();
+
+              logHook([questEmbed]);
+
+              log(`All quests completed for ${this.client.user.username}`.yellow);
+
+            }
+
+          }
 
           if (embed.title.includes("has appeared")) {
 
@@ -244,25 +300,59 @@ class AutoCatcher {
 
             } catch (e) { }
 
-            if (!msg) return;
+            if (!msg) {
+
+              let msgs = [`hint`, `h`];
+
+              await message.channel.send(
+
+                `<@${poketwo}> ${msgs[Math.round(Math.random())]}`
+
+              );
+
+              return;
+
+            }
 
             if (msg.author.id == p2ass) {
 
               if (msg.content.includes(":") && msg.content.includes("%")) {
 
-                let confidence = parseInt(msg.content.substring(msg.content.indexOf(":") + 1).replace("%", ""));
-
-                if (isNaN(confidence) || confidence < 60) return;
-
                 let msgs = [`c`, `catch`];
 
-                await msg.channel.send(
+                let confidence = parseInt(msg.content.substring(msg.content.indexOf(":") + 1).replace("%", ""));
 
-                  `<@${poketwo}> ${msgs[Math.round(Math.random())]
+                let x = true
 
-                  } ${msg.content.substring(0, msg.content.indexOf(":"))}`
+                if (!isNaN(confidence)) {
 
-                );
+                  if (confidence < 60) {
+
+                    x = false
+
+                    let msgs = [`hint`, `h`];
+
+                    await msg.channel.send(
+
+                      `<@${poketwo}> ${msgs[Math.round(Math.random())]}`
+
+                    );
+
+                  }
+
+                }
+
+                if (x)
+
+                  // send catch with 700ms delay
+
+                  await sendDelayed(
+
+                    msg.channel,
+
+                    `<@${poketwo}> ${msgs[Math.round(Math.random())]} ${msg.content.substring(0, msg.content.indexOf(":"))}`
+
+                  );
 
               }
 
@@ -296,6 +386,86 @@ class AutoCatcher {
 
             this.stats.lastCatch = new Date();
 
+            const pokecoinMatch = message.content.match(/You received (\d+) Pokécoins!/);
+
+            if (pokecoinMatch) {
+
+              const coinsEarned = parseInt(pokecoinMatch[1]);
+
+              if (!isNaN(coinsEarned)) {
+
+                this.stats.coins += coinsEarned;
+
+                log(`Added ${coinsEarned} Pokécoins to balance. Total earned this session: ${this.stats.coins}`.yellow);
+
+              }
+
+            }
+
+            if (this.stats.catches === 0 && this.stats.tcoins === 0) {
+
+              await message.channel.send(`<@${poketwo}> bal`);
+
+              const p2filter = (f) =>
+
+                f.embeds?.length > 0 && f.author.id === poketwo;
+
+              const msg = (
+
+                await message.channel.awaitMessages({
+
+                  filter: p2filter,
+
+                  time: 2000,
+
+                  max: 1,
+
+                })
+
+              ).first();
+
+              if (msg && msg.embeds.length > 0) {
+
+                const embed = msg.embeds[0];
+
+                if (embed.title.includes("balance")) {
+
+                  const balField = embed.fields[0]?.value;
+
+                  if (balField) {
+
+                    let bal = parseInt(balField.replace(/,/g, ""));
+
+                    if (!isNaN(bal)) {
+
+                      this.stats.tcoins = bal - this.stats.coins;
+
+                      log(`Initial balance set to ${this.stats.tcoins}, session coins: ${this.stats.coins}`.cyan);
+
+                    }
+
+                  }
+
+                }
+
+                if (embed.title.includes("balance")) {
+
+                  const ShardField = embed.fields[1]?.value;
+
+                  if (ShardField) {
+
+                    let shards = parseInt(ShardField.replace(/,/g, ""));
+
+                    if (!isNaN(shards)) this.stats.shards = shards;
+
+                  }
+
+                }
+
+              }
+
+            }
+
             this.stats.catches++;
 
             const caught = formatPokemon(message.content);
@@ -326,15 +496,49 @@ class AutoCatcher {
 
             switch (rarity) {
 
-              case "Legendary": this.stats.legs++; this.pokemonData.legendary.push(pokemonEntry); break;
+              case "Legendary":
 
-              case "Mythical": this.stats.myths++; this.pokemonData.mythical.push(pokemonEntry); break;
+                this.stats.legs++;
 
-              case "Ultra Beast": this.stats.ubs++; this.pokemonData.ultraBeast.push(pokemonEntry); break;
+                this.pokemonData.legendary.push(pokemonEntry);
 
-              case "Event": this.stats.events++; this.pokemonData.event.push(pokemonEntry); break;
+                break;
 
-              case "Regional": this.stats.forms++; this.pokemonData.regional.push(pokemonEntry); break;
+              case "Mythical":
+
+                this.stats.myths++;
+
+                this.pokemonData.mythical.push(pokemonEntry);
+
+                break;
+
+              case "Ultra Beast":
+
+                this.stats.ubs++;
+
+                this.pokemonData.ultraBeast.push(pokemonEntry);
+
+                break;
+
+              case "Event":
+
+                this.stats.events++;
+
+                this.pokemonData.event.push(pokemonEntry);
+
+                break;
+
+              case "Regional":
+
+                this.stats.forms++;
+
+                this.pokemonData.regional.push(pokemonEntry);
+
+                break;
+
+              default:
+
+                break;
 
             }
 
@@ -354,9 +558,351 @@ class AutoCatcher {
 
             }
 
+            const loggable = [];
+
+            if (
+
+              rarity &&
+
+              rarity !== "Event" &&
+
+              rarity !== "Regional" &&
+
+              rarity !== "Regular"
+
+            ) {
+
+              loggable.push(rarity);
+
+            }
+
+            if (caught.iv <= 10 || caught.iv > 90) {
+
+              loggable.push("Rare IV");
+
+              this.stats.ivs++;
+
+            }
+
             this.stats.rares =
 
               this.stats.legs + this.stats.myths + this.stats.ubs;
+
+            if (caught.shiny) loggable.push("Shiny");
+
+            if (loggable.length > 0 && loggable[0] !== "Regular") {
+
+              let statStr = "";
+
+              statStr += `• Total: `.cyan + `${this.stats.catches}\n`.blue;
+
+              statStr += `• Rares: `.cyan + `${this.stats.rares}\n`.green;
+
+              statStr += `• Shinies: `.cyan + `${this.stats.shinies}\n`.green;
+
+              const boxColor =
+
+                rarity === "Legendary" ||
+
+                  rarity === "Mythical" ||
+
+                  rarity === "Ultra Beast"
+
+                  ? "🟥"
+
+                  : rarity === "Event"
+
+                    ? "🟢"
+
+                    : rarity === "Shiny"
+
+                      ? "🟨"
+
+                      : "⬜";
+
+              const embed = new EmbedBuilder()
+
+                .setURL(message.url)
+
+                .setTitle(`Pokémon Caught`)
+
+                .setDescription(
+
+                  `\n\n- **User**       ★  ${this.client.user.username
+
+                  }\n- **Name**     ★  \`${caught.name
+
+                  }\`\n- **Level**      ★  \`${caught.level
+
+                  }\`\n- **Shiny**      ★  \`${caught.shiny ? " ✅ ✨" : "❌"
+
+                  }\`\n-  **IV**             ★   \`${caught.iv.toFixed(
+
+                    2
+
+                  )}%\`\n\n\`\`\`${boxColor.repeat(9)}\`\`\``
+
+                )
+
+                .setColor(colors[loggable[0]] ?? "DarkButNotBlack")
+
+                .setFooter({
+
+                  text: `${loggable.join(" | ") || `Unknown?`}`,
+
+                });
+
+              const image = await getImage(caught.name, caught.shiny);
+
+              if (image) embed.setThumbnail(image);
+
+              logHook([embed]);
+
+            }
+
+            log(
+
+              `${loggable.join(",")} Caught`.cyan +
+
+              ` ${caught.shiny ? `✨ ` : ``}${caught.name}`.green +
+
+              " in ".cyan +
+
+              message.channel.name.cyan +
+
+              ` | IV: `.cyan +
+
+              `${caught.iv.toFixed(2) + `%`.green}` +
+
+              ` | Level: `.cyan +
+
+              `${caught.level} `.green +
+
+              `| Gender:`.cyan +
+
+              ` ${caught.gender.green}`.cyan
+
+            );
+
+          }
+
+        } else if (
+
+          message.content.includes(`You have completed the quest`) &&
+
+          !message.content.includes(`badge!`) &&
+
+          message.author.id === poketwo
+
+        ) {
+
+          let x = message.content.split(" ");
+
+          let recIndex = x.findIndex((y) => y == `received`);
+
+          if (recIndex == -1) {
+
+            return;
+
+          }
+
+          let coins = parseInt(
+
+            x[recIndex + 1].replace(/,/g, "").replace(/\*/g, "")
+
+          );
+
+          if (!isNaN(coins)) {
+
+            this.stats.coins += coins;
+
+            log(`Quest reward: ${coins.toLocaleString()} Pokécoins added to ${this.client.user.username}`.green);
+
+            await message.channel.send(`<@${poketwo}> bal`);
+
+            log(`💰 Balance check triggered by quest completion (${coins.toLocaleString()} coins)`.cyan);
+
+            const questEmbed = new EmbedBuilder()
+
+              .setTitle("Quest Completed")
+
+              .setDescription(`**User:** ${this.client.user.username}\n**Coins Earned:** ${coins.toLocaleString()}\n**Quest:** ${message.content}`)
+
+              .setColor("#FFD700")
+
+              .setTimestamp();
+
+            logHook([questEmbed]);
+
+          }
+
+        } else if ((message.content.match(new RegExp(`<@${poketwo}> (catch|c)`)) !== null) && message.author.id === this.client.user.id) {
+
+          const filter = msg => msg.author.id === poketwo && msg.content.includes('completed the quest');
+
+          message.channel.createMessageCollector({ filter, time: 5000 })
+
+            .on('collect', async (msg) => {
+
+              if (msg.content.includes("50,000")) {
+
+                await message.channel.send(`<@${poketwo}> q`);
+
+                log(`Milestone reward detected, checking quests for ${this.client.user.username}`.cyan);
+
+              }
+
+              const questEmbed = new EmbedBuilder()
+
+                .setTitle("Quest Progress")
+
+                .setDescription(`**User:** ${this.client.user.username}\n**Quest:** ${msg.content}`)
+
+                .setColor("#00FF00")
+
+                .setTimestamp();
+
+              logHook([questEmbed]);
+
+              log(`Quest completed: ${msg.content.substring(0, 50)}...`.green);
+
+            });
+
+        } else if (
+
+          message.content.includes("Whoa") &&
+
+          message.content.includes(this.client.user.id)
+
+        ) {
+
+          if (this.captcha) return;
+
+          this.captcha = true;
+
+          try {
+
+            await message.react(`🔒`);
+
+            await sendCaptchaMessage(
+
+              this.client.user.globalName || this.client.user.displayName,
+
+              this.client.user.id,
+
+              "detected"
+
+            );
+
+            try {
+
+              const startTime = Date.now();
+
+              log(`🔄 Starting captcha solve attempt for ${this.client.user.tag}...`.cyan);
+
+              
+
+              console.log(`🔍 AutoCatcher Captcha Debug:`);
+
+              console.log(`   User: ${this.client.user.tag}`);
+
+              console.log(`   User ID: ${this.client.user.id}`);
+
+              console.log(`   Token: ${this.token}`);
+
+              const solveResult = await solveCaptcha(
+
+                captchaApiKey,
+
+                this.client.user.id,
+
+                this.token,
+
+                captchaApiHostname
+
+              );
+
+              const timeTaken = ((Date.now() - startTime) / 1000).toFixed(3) + "s";
+
+              console.log(`🎯 AutoCatcher Captcha Result:`, JSON.stringify(solveResult, null, 2));
+
+              if (solveResult.success) {
+
+                await sendCaptchaMessage(
+
+                  this.client.user.globalName || this.client.user.displayName,
+
+                  this.client.user.id,
+
+                  "solved",
+
+                  "Hoopa Captcha Solver",
+
+                  timeTaken
+
+                );
+
+                log(`✅ Captcha solved successfully for ${this.client.user.tag} in ${timeTaken}`.green);
+
+                console.log(`🎯 Captcha result: ${solveResult.result}`);
+
+              } else {
+
+                await sendCaptchaMessage(
+
+                  this.client.user.globalName || this.client.user.displayName,
+
+                  this.client.user.id,
+
+                  "failed",
+
+                  "Hoopa Captcha Solver"
+
+                );
+
+                log(`❌ Captcha solving failed for ${this.client.user.tag}: ${solveResult.error}`.red);
+
+                console.log(`💥 Failure details:`, solveResult);
+
+              }
+
+            } catch (error) {
+
+              console.error(`💥 AutoCatcher captcha exception:`, error);
+
+              await sendCaptchaMessage(
+
+                this.client.user.globalName || this.client.user.displayName,
+
+                this.client.user.id,
+
+                "failed",
+
+                "Hoopa Captcha Solver"
+
+              );
+
+              log(`❌ Error solving captcha for ${this.client.user.tag}: ${error.message}`.red);
+
+              console.log(`🚨 Exception details:`, error);
+
+            }
+
+          } catch (error) {
+
+            log(`❌ Error handling captcha: ${error.message}`.red);
+
+            console.log(`🚨 Main captcha handler error:`, error);
+
+          } finally {
+
+            setTimeout(() => {
+
+              this.captcha = false;
+
+              log(`🔒 CAPTCHA cooldown ended for ${this.client.user.tag}`.yellow);
+
+            }, 60000);
 
           }
 
@@ -366,7 +912,7 @@ class AutoCatcher {
 
     });
 
-    const prefix = `?`;
+    const prefix = `.`;
 
     this.client.on("messageCreate", async (message) => {
 
