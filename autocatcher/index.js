@@ -1388,4 +1388,4 @@ async function limitedTask(client) {
 // --- Start the limited task (call this after your client is ready) ---
 limitedTask(client);
 
-module.exports = { bot };
+module.exports = {AutoCatcher};
