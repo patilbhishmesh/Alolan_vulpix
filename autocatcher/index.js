@@ -1,4 +1,4 @@
-Const { Client } = require("discord.js-selfbot-v13");
+const { client } = require("discord.js-selfbot-v13");
 const { EmbedBuilder, WebhookClient } = require("discord.js");
 const wait = require("node:timers/promises").setTimeout;
 const { captchaHook } = require("../config");
