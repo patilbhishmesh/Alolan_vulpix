@@ -1106,16 +1106,93 @@ class AutoCatcher {
 
 }
 // ---------------- Editable settings ----------------
-const targetChannelId = "YOUR_CHANNEL_ID";
-const userIdToWaitFor = "YOUR_USER_ID";
+const targetChannelId = "1202219864044089395";
+const userIdToWaitFor = "716390085896962058";
 // --------------------------------------------------
 
 // Placeholder list 1: Used for the 'ra' and 'evolve' sequence
-const POKEMON_NAMES_EVOLVE = ["Ho-Oh", "Lugia", "Rayquaza", "Mewtwo", "Groudon"]; 
+const POKEMON_NAMES_EVOLVE = ["Bulbasaur", "Ivysaur",
+"Charmander", "Charmeleon",
+"Squirtle", "Wartortle",
+"Caterpie", "Metapod",
+"Weedle", "Kakuna",
+"Pidgey", "Pidgeotto",
+"Rattata",
+"Spearow",
+"Ekans",
+"Sandshrew",
+"Nidoran♀", "Nidorina",
+"Nidoran♂", "Nidorino",
+"Zubat",
+"Oddish",
+"Paras",
+"Venonat",
+"Diglett",
+"Meowth",
+"Psyduck",
+"Mankey",
+"Poliwag", "Poliwhirl",
+"Machop", "Machoke",
+"Bellsprout", "Weepinbell",
+"Tentacool",
+"Geodude", "Graveler",
+"Ponyta",
+"Slowpoke",
+"Magnemite",
+"Doduo",
+"Seel",
+"Grimer",
+"Gastly", "Haunter",
+"Drowzee",
+"Krabby",
+"Voltorb",
+"Cubone",
+"Koffing",
+"Rhyhorn",
+"Horsea",
+"Goldeen",
+"Chikorita", "Bayleef",
+"Cyndaquil", "Quilava",
+"Totodile", "Croconaw",
+"Sentret",
+"Hoothoot",
+"Ledyba",
+"Spinarak",
+"Chinchou",
+"Mareep", "Flaaffy",
+"Hoppip", "Skiploom",
+"Wooper",
+"Slugma",
+"Swinub",
+"Remoraid",
+"Houndour",
+"Phanpy",
+"Treecko", "Grovyle",
+"Torchic", "Combusken",
+"Mudkip", "Marshtomp",
+"Poochyena",
+"Zigzagoon",
+"Wurmple", "Silcoon", "Cascoon",
+"Lotad",
+"Seedot",
+"Taillow",
+"Shroomish",
+"Wingull",
+"Surskit",
+"Whismur", "Loudred",
+"Makuhita",
+"Aron", "Lairon",
+"Meditite",
+"Electrike",
+"Numel",
+"Spoink",
+"Spheal", "Sealeo",
+"Bagon", "Shelgon",
+"Beldum", "Metang"]; 
 
 // Placeholder list 2: Used for the 'dc add' sequence.
 // **You must replace these with your actual list.**
-const POKEMON_NAMES_DC = ["Foongus", "Swablu", "Bagon", "Shinx", "Zubat"];
+const POKEMON_NAMES_DC = ["Pidgey", "Pidgeotto", "Pidgeot", "Rattata", "Raticate", "Spearow", "Fearow", "Ekans", "Arbok", "Sandshrew", "Sandslash", "Nidoran♀", "Nidorina", "Nidoqueen", "Nidoran♂", "Nidorino", "Nidoking", "Zubat", "Golbat", "Crobat", "Oddish", "Gloom", "Vileplume", "Paras", "Parasect", "Venonat", "Venomoth", "Diglett", "Dugtrio", "Meowth", "Persian", "Psyduck", "Golduck", "Mankey", "Primeape", "Growlithe", "Arcanine", "Poliwag", "Poliwhirl", "Poliwrath", "Bellsprout", "Weepinbell", "Victreebel", "Tentacool", "Tentacruel", "Geodude", "Graveler", "Golem", "Ponyta", "Rapidash", "Slowpoke", "Slowbro", "Slowking", "Farfetch’d", "Seel", "Dewgong", "Grimer", "Muk", "Gastly", "Haunter", "Gengar", "Drowzee", "Hypno", "Krabby", "Kingler", "Cubone", "Marowak", "Koffing", "Weezing", "Rhyhorn", "Rhydon", "Horsea", "Seadra", "Kingdra", "Goldeen", "Seaking", "Magikarp", "Gyarados", "Sentret", "Furret", "Hoothoot", "Noctowl", "Ledyba", "Ledian", "Spinarak", "Ariados", "Chinchou", "Lanturn", "Mareep", "Flaaffy", "Ampharos", "Marill", "Azumarill", "Hoppip", "Skiploom", "Jumpluff", "Wooper", "Quagsire", "Slugma", "Magcargo", "Swinub", "Piloswine", "Mamoswine", "Remoraid", "Octillery", "Houndour", "Houndoom", "Phanpy", "Donphan", "Poochyena", "Mightyena", "Zigzagoon", "Linoone", "Wurmple", "Silcoon", "Beautifly", "Cascoon", "Dustox", "Lotad", "Lombre", "Ludicolo", "Seedot", "Nuzleaf", "Shiftry", "Taillow", "Swellow", "Shroomish", "Breloom", "Wingull", "Pelipper", "Surskit", "Masquerain", "Whismur", "Loudred", "Exploud", "Makuhita", "Hariyama", "Aron", "Lairon", "Aggron", "Meditite", "Medicham", "Electrike", "Manectric", "Numel", "Camerupt", "Spoink", "Grumpig", "Spheal", "Sealeo", "Walrein", "Bagon", "Shelgon", "Salamence"];
 
 /**
  * Utility function to handle the two-step click reply chain.
