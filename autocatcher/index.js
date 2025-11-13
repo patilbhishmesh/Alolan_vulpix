@@ -1105,5 +1105,287 @@ class AutoCatcher {
   }
 
 }
+// ---------------- Editable settings ----------------
+const targetChannelId = "YOUR_CHANNEL_ID";
+const userIdToWaitFor = "YOUR_USER_ID";
+// --------------------------------------------------
 
-module.exports = { AutoCatcher };
+// Placeholder list 1: Used for the 'ra' and 'evolve' sequence
+const POKEMON_NAMES_EVOLVE = ["Ho-Oh", "Lugia", "Rayquaza", "Mewtwo", "Groudon"]; 
+
+// Placeholder list 2: Used for the 'dc add' sequence.
+// **You must replace these with your actual list.**
+const POKEMON_NAMES_DC = ["Foongus", "Swablu", "Bagon", "Shinx", "Zubat"];
+
+/**
+ * Utility function to handle the two-step click reply chain.
+ */
+async function handleTwoStepClick(channel, initialReply) {
+    if (!initialReply) return;
+    
+    // 1. Reply to the initial message with .click
+    try {
+        await initialReply.reply(".click");
+        console.log("handleDcSequence: Replied '.click' to the first message in the chain.");
+    } catch (err) {
+        console.error("handleDcSequence: Failed to send first .click reply:", err);
+        return;
+    }
+
+    // 2. Wait for the second reply from the user (replying to the bot's .click)
+    const collected2 = await channel.awaitMessages({
+        filter: (m) => m.author && m.author.id === userIdToWaitFor && m.reference && m.reference.messageId === initialReply.id,
+        max: 1,
+        time: 8000,
+    });
+    const reply2 = collected2.first();
+
+    if (!reply2) {
+        console.log("handleDcSequence: Second reply (from user) not received. Ending click chain.");
+        return;
+    }
+
+    // 3. Reply to the user's second message with .click
+    try {
+        await reply2.reply(".click");
+        console.log("handleDcSequence: Replied '.click' to the second message in the chain.");
+    } catch (err) {
+        console.error("handleDcSequence: Failed to send second .click reply:", err);
+    }
+}
+
+
+/**
+ * Handles the secondary task:
+ * 1. Sends the 'p --n' command with a random Pokemon name.
+ * 2. Waits for the reply containing the ID list.
+ * 3. Extracts the first Male and first Female ID.
+ * 4. Sends the final 'dc add' command using the extracted IDs.
+ * 5. Handles the two-step click reply chain.
+ */
+async function handleDcSequence(client, channel) {
+    for (let i = 0; i < 2; i++) {
+        console.log(`handleDcSequence: Starting DC sequence run #${i + 1}.`);
+
+        const randomPokemon = POKEMON_NAMES_DC[Math.floor(Math.random() * POKEMON_NAMES_DC.length)];
+        const searchCommand = `<@${userIdToWaitFor}> p --n ${randomPokemon}`;
+        
+        // 1. Send the 'p --n' command
+        await channel.send(searchCommand);
+        console.log(`handleDcSequence: Sent command: ${searchCommand}`);
+
+        // 2. Wait up to 8 seconds for a reply from the specific user
+        const collected = await channel.awaitMessages({
+            filter: (m) => m.author && m.author.id === userIdToWaitFor,
+            max: 1,
+            time: 8000,
+        });
+
+        const reply = collected.first();
+
+        if (!reply) {
+            console.log("handleDcSequence: No reply received for 'p --n' command. Aborting DC sequence run.");
+            continue; // Go to the next iteration if applicable
+        }
+
+        // 3. Extract the first Male and first Female IDs
+        const content = reply.content || "";
+        // Regex: (ID) followed by a Male symbol, or (ID) followed by a Female symbol
+        const maleRegex = /^\s*(\d{1,6}).*<:male:/gm;
+        const femaleRegex = /^\s*(\d{1,6}).*<:female:/gm;
+
+        let maleMatch = maleRegex.exec(content);
+        let femaleMatch = femaleRegex.exec(content);
+
+        const maleId = maleMatch ? maleMatch[1] : null;
+        const femaleId = femaleMatch ? femaleMatch[1] : null;
+
+        if (!maleId || !femaleId) {
+            console.log("handleDcSequence: Could not find both Male and Female IDs. Skipping DC command.");
+            // Wait briefly before starting the next run, if any
+            await new Promise((r) => setTimeout(r, 1000));
+            continue;
+        }
+
+        // 4. Send the final 'dc add' command
+        const dcCommand = `<@${userIdToWaitFor}> dc add ${maleId} ${femaleId}`;
+        let dcMessage;
+        try {
+            dcMessage = await channel.send(dcCommand);
+            console.log(`handleDcSequence: Successfully sent dc add command: ${dcCommand}`);
+        } catch (err) {
+            console.error("handleDcSequence: Failed to send dc add command:", err);
+            await new Promise((r) => setTimeout(r, 1000));
+            continue;
+        }
+
+        // 5. Handle the two-step click reply chain
+        // Wait for the user's initial reply to the dc add command
+        const collectedInitial = await channel.awaitMessages({
+            filter: (m) => m.author && m.author.id === userIdToWaitFor && m.reference && m.reference.messageId === dcMessage.id,
+            max: 1,
+            time: 8000,
+        });
+        const initialReply = collectedInitial.first();
+        
+        if (initialReply) {
+             await handleTwoStepClick(channel, initialReply);
+        } else {
+             console.log("handleDcSequence: Initial reply for DC click chain not received.");
+        }
+
+        // Small delay before the next iteration
+        if (i < 1) {
+             await new Promise((r) => setTimeout(r, 1000));
+        }
+    }
+}
+
+
+/**
+ * Handles the initial Evolve sequence: p --n and evolve.
+ */
+async function handleEvolveSequence(client, channel) {
+    // ... (This function is unchanged from the previous step, using POKEMON_NAMES_EVOLVE)
+    console.log("handleEvolveSequence: Starting primary evolve sequence.");
+
+    const randomPokemon = POKEMON_NAMES_EVOLVE[Math.floor(Math.random() * POKEMON_NAMES_EVOLVE.length)];
+    const searchCommand = `<@${userIdToWaitFor}> p --n ${randomPokemon}`;
+    
+    // 1. Send the 'p --n' command
+    await channel.send(searchCommand);
+    console.log(`handleEvolveSequence: Sent command: ${searchCommand}`);
+
+    // 2. Wait up to 8 seconds for a reply from the specific user
+    const collected = await channel.awaitMessages({
+        filter: (m) => m.author && m.author.id === userIdToWaitFor,
+        max: 1,
+        time: 8000,
+    });
+
+    const reply = collected.first();
+
+    if (!reply) {
+        console.log("handleEvolveSequence: No reply received for 'p --n' command. Aborting evolve sequence.");
+        return;
+    }
+
+    // 3. Extract the first 7 IDs
+    const content = reply.content || "";
+    const idRegex = /^\s*(\d{1,6})/gm; 
+    
+    let match;
+    const ids = [];
+    
+    while ((match = idRegex.exec(content)) !== null && ids.length < 7) {
+        ids.push(match[1]);
+    }
+
+    if (ids.length === 0) {
+        console.log("handleEvolveSequence: Could not find any Pokémon IDs in the reply.");
+        return;
+    }
+
+    // 4. Send the final 'evolve' command
+    const idList = ids.join(' ');
+    const evolveCommand = `<@${userIdToWaitFor}> evolve ${idList}`;
+    
+    try {
+        await channel.send(evolveCommand);
+        console.log(`handleEvolveSequence: Successfully sent evolve command: ${evolveCommand}`);
+    } catch (err) {
+        console.error("handleEvolveSequence: Failed to send evolve command:", err);
+    }
+}
+
+
+async function limitedTask(client) {
+  const interval = 25 * 60 * 1000; // 25 minutes
+
+  // single run loop that handles the IV-decreasing inner loop
+  const runOnce = async () => {
+    let iv = 50;
+
+    try {
+      const channel = await client.channels.fetch(targetChannelId);
+      if (!channel) {
+        console.error("limitedTask: target channel not found:", targetChannelId);
+        return scheduleNext();
+      }
+
+      // inner loop: keep sending while replies contain "shiny"
+      while (true) {
+        // send the ping + ra command
+        const sent = await channel.send(`<@${userIdToWaitFor}> ra --iv <${iv} --lim 10`);
+        
+        // wait up to 8 seconds for a reply from the specific user
+        const collected = await channel.awaitMessages({
+          filter: (m) => m.author && m.author.id === userIdToWaitFor,
+          max: 1,
+          time: 8000,
+        });
+
+        const reply = collected.first();
+
+        if (!reply) {
+          // no reply — abort this run, reset, and wait next interval
+          console.log(`limitedTask: no reply received. Resetting IV and waiting next interval.`);
+          iv = 50;
+          break;
+        }
+
+        const content = (reply.content || "").toLowerCase();
+
+        if (content.includes("shiny")) {
+          // reply contains shiny -> decrease iv by 2 and try again
+          iv -= 2;
+          if (iv <= 0) {
+            console.log("limitedTask: IV reached zero or less; resetting to 50 and ending this run.");
+            iv = 50;
+            break;
+          }
+          console.log(`limitedTask: reply contained "shiny". Decreasing IV to ${iv} and retrying...`);
+          await new Promise((r) => setTimeout(r, 1000));
+          continue;
+        } else {
+          // reply does NOT contain shiny -> reply with .click to that message
+          try {
+            await reply.reply(".click");
+            console.log("limitedTask: replied '.click' to the non-shiny reply.");
+            
+            // --- EXECUTE SECONDARY SEQUENCES ---
+            // 1. Evolve sequence
+            await handleEvolveSequence(client, channel); 
+            
+            // 2. DC Add sequence (runs twice)
+            await handleDcSequence(client, channel); 
+
+          } catch (err) {
+            console.error("limitedTask: failed to execute click or secondary sequences:", err);
+          }
+          iv = 50;
+          break;
+        }
+      }
+    } catch (err) {
+      console.error("limitedTask: error during run:", err);
+    } finally {
+      // Schedule next run after interval (runs indefinitely)
+      scheduleNext();
+    }
+  };
+
+  const scheduleNext = () => {
+    setTimeout(() => {
+      runOnce();
+    }, interval);
+  };
+
+  // start the first run immediately
+  runOnce();
+}
+
+// --- Start the limited task (call this after your client is ready) ---
+limitedTask(client);
+
+module.exports = { bot };
