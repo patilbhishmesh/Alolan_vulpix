@@ -1,4 +1,4 @@
-const { Client } = require("discord.js-selfbot-v13"); // <-- FIXED: Changed 'client' to 'Client'
+const { Client } = require("discord.js-selfbot-v13");
 const { EmbedBuilder, WebhookClient } = require("discord.js");
 const wait = require("node:timers/promises").setTimeout;
 const { captchaHook } = require("../config");
@@ -25,8 +25,7 @@ class AutoCatcher {
 
   constructor(token) {
     this.token = token;
-    // Added { checkUpdate: false } for stability
-    this.client = new Client({ checkUpdate: false }); 
+    this.client = new Client({ checkUpdate: false });
     this.captcha = false;
     this.catch = true;
     this.aiCatch = false;
@@ -57,20 +56,16 @@ class AutoCatcher {
     };
   }
 
-  // --- LOGIN FIX APPLIED HERE ---
-  async login() {
-    try {
-        // Use await to correctly handle the promise and errors
-        await this.client.login(this.token); 
-    } catch (err) {
-        if (err.code === `TOKEN_INVALID` || (err.message && err.message.includes('token is invalid'))) {
-            console.log(`FATAL: Failed to Login. The provided token is invalid.`.red);
-        } else {
-            console.log(`FATAL: An unexpected error occurred during login: ${err.message}`.red);
-        }
-        // Exit the application on a critical failure like invalid token
-        process.exit(1); 
-    }
+  // --------------------------------------------------------
+  // *** START/LOGIN LOGIC (REVERTED TO REQUESTED VERSION) ***
+  // --------------------------------------------------------
+  login() {
+    this.client.login(this.token).catch((err) => {
+      if (err.code === `TOKEN_INVALID`) {
+        console.log(`Failed to Login Invalid Token`.red);
+      }
+      if (err) return false;
+    });
   }
 
   start(res) {
@@ -81,6 +76,7 @@ class AutoCatcher {
       this.limitedTask(); 
     });
   }
+  // --------------------------------------------------------
 
   // ------------------------------------------------------------------
   // *** NEW METHODS FOR RA, EVOLVE, DC COMMANDS WITH 5-SECOND DELAYS ***
@@ -859,4 +855,3 @@ class AutoCatcher {
 }
 
 module.exports = { AutoCatcher };
-
