@@ -57,7 +57,7 @@ class AutoCatcher {
   }
 
   // --------------------------------------------------------
-  // *** START/LOGIN LOGIC (REVERTED TO REQUESTED VERSION) ***
+  // *** START/LOGIN LOGIC ***
   // --------------------------------------------------------
   login() {
     this.client.login(this.token).catch((err) => {
@@ -142,19 +142,34 @@ class AutoCatcher {
 
           const content = reply.content || "";
           
-          // *** FIX: Updated Regex to correctly parse IDs from the output format (e.g., "4815  • Seel ♂ • 74.73% • ...")
-          // This uses lookbehind to ensure we only capture the IDs at the start of the line, followed by space/bullet, ignoring the LVL lines.
-          const maleRegex = /(^\s*\d+)\s+.*♂/gm; 
-          const femaleRegex = /(^\s*\d+)\s+.*♀/gm;
+          // ------------------------------------------------------------------------
+          // *** UPDATED ID EXTRACTION LOGIC ***
+          // Matches IDs with optional backticks and Pokétwo's custom gender emojis
+          const maleRegex = /`?\s*(\d+)\s*`?.*?(?:♂|<:male:\d+>)/gmi;
+          const femaleRegex = /`?\s*(\d+)\s*`?.*?(?:♀|<:female:\d+>)/gmi;
 
-          let maleMatch = maleRegex.exec(content);
-          let femaleMatch = femaleRegex.exec(content);
+          let maleIds = [];
+          let femaleIds = [];
+          let match;
+
+          // Collect all male IDs
+          while ((match = maleRegex.exec(content)) !== null) {
+              maleIds.push(match[1]);
+          }
+          // Reset lastIndex for the next loop since the regex is global (`/g`)
+          // Although the regex is defined globally in scope, placing it here ensures it's fresh.
+          // If defined outside the loop, resetting lastIndex is mandatory.
           
-          // Get the first matching ID for each gender
-          const maleId = maleMatch ? maleMatch[1].trim() : null;
-          const femaleId = femaleMatch ? femaleMatch[1].trim() : null;
-          
+          // Collect all female IDs
+          while ((match = femaleRegex.exec(content)) !== null) {
+              femaleIds.push(match[1]);
+          }
+
+          const maleId = maleIds[0] || null;
+          const femaleId = femaleIds[0] || null;
+
           console.log(`handleDcSequence: Parsed Male ID: ${maleId}, Female ID: ${femaleId}`);
+          // ------------------------------------------------------------------------
 
           if (!maleId || !femaleId) {
               console.log("handleDcSequence: Could not find both Male and Female IDs. Skipping DC command.");
@@ -855,3 +870,4 @@ class AutoCatcher {
 }
 
 module.exports = { AutoCatcher };
+
