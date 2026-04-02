@@ -1,2 +1,2 @@
 # Alolan_vulpix
-this project is 
+This project is made for the
