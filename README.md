@@ -1,2 +1,2 @@
 # Alolan_vulpix
-This project is made for the poketwo discord Bot
+This project is made for the poketwo discord Bo
